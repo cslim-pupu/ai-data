@@ -195,6 +195,7 @@
         v-loading="loading"
       >
         <el-table-column prop="caseName" label="图文标题" width="200" show-overflow-tooltip />
+        <el-table-column prop="wechatName" label="公众号名称" width="150" show-overflow-tooltip />
         <el-table-column prop="industry" label="行业" width="100" />
         <el-table-column prop="memberType" label="会员类型" width="120" />
         <el-table-column prop="publishDate" label="发布时间" width="100" />
@@ -240,6 +241,7 @@
           <el-descriptions-item label="发布时间">{{ currentCase.publishDate }}</el-descriptions-item>
           <el-descriptions-item label="节日标签">{{ currentCase.holiday }}</el-descriptions-item>
           <el-descriptions-item label="填写人">{{ currentCase.author }}</el-descriptions-item>
+          <el-descriptions-item label="公众号名称" :span="2">{{ currentCase.wechatName }}</el-descriptions-item>
           <el-descriptions-item label="公众号链接" :span="2">
             <el-link :href="currentCase.wechatLink" target="_blank" type="primary">
               {{ currentCase.wechatLink }}

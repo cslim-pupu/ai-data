@@ -63,6 +63,16 @@
           </div>
         </el-form-item>
 
+        <!-- 公众号名称 -->
+        <el-form-item label="公众号名称" prop="wechatName">
+          <el-input 
+            v-model="form.wechatName" 
+            placeholder="请输入公众号名称"
+            clearable
+          />
+          <div class="form-tip">填写该文章所属的公众号名称</div>
+        </el-form-item>
+
         <!-- 用到的组件 -->
         <el-form-item label="使用组件" prop="components">
           <el-input
@@ -196,6 +206,7 @@ export default {
     const form = reactive({
       caseName: '',
       wechatLink: '',
+      wechatName: '',
       components: '',
       industry: '',
       publishDate: '',
@@ -319,6 +330,10 @@ export default {
       ],
       wechatLink: [
         { required: true, validator: validateWechatLink, trigger: 'blur' }
+      ],
+      wechatName: [
+        { required: true, message: '请输入公众号名称', trigger: 'blur' },
+        { min: 2, max: 50, message: '公众号名称长度在 2 到 50 个字符', trigger: 'blur' }
       ],
       components: [
         { required: true, message: '请输入使用的组件', trigger: 'blur' },
