@@ -110,6 +110,9 @@
             <el-option label="家居" value="家居" />
             <el-option label="母婴" value="母婴" />
             <el-option label="宠物" value="宠物" />
+            <el-option label="自媒体" value="自媒体" />
+            <el-option label="艺术设计" value="艺术设计" />
+            <el-option label="潮玩" value="潮玩" />
             <el-option label="其他" value="其他" />
           </el-select>
           <div class="form-tip">选案例所属的行业</div>
