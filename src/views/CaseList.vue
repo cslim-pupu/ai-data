@@ -103,6 +103,27 @@
             <el-option label="无特定节日" value="无特定节日" />
           </el-select>
 
+          <el-select
+            v-model="filters.month"
+            placeholder="选择月份"
+            clearable
+            style="width: 120px; margin-right: 10px;"
+            @change="handleFilter"
+          >
+            <el-option label="1月" value="1" />
+            <el-option label="2月" value="2" />
+            <el-option label="3月" value="3" />
+            <el-option label="4月" value="4" />
+            <el-option label="5月" value="5" />
+            <el-option label="6月" value="6" />
+            <el-option label="7月" value="7" />
+            <el-option label="8月" value="8" />
+            <el-option label="9月" value="9" />
+            <el-option label="10月" value="10" />
+            <el-option label="11月" value="11" />
+            <el-option label="12月" value="12" />
+          </el-select>
+
           <el-button @click="clearFilters">清空筛选</el-button>
         </div>
 
@@ -404,7 +425,8 @@ export default {
     const filters = reactive({
       industry: '',
       memberType: '',
-      holiday: ''
+      holiday: '',
+      month: ''
     })
 
     // 详情对话框
@@ -444,17 +466,17 @@ export default {
     }
 
     // 计算属性
-    // 统计数据计算
-      const totalCases = computed(() => caseList.value.length)
+    // 统计数据计算 - 基于筛选后的数据
+      const totalCases = computed(() => filteredList.value.length)
       
       const industryCount = computed(() => {
-        const industries = new Set(caseList.value.map(item => item.industry).filter(Boolean))
+        const industries = new Set(filteredList.value.map(item => item.industry).filter(Boolean))
         return industries.size
       })
       
       const componentCount = computed(() => {
         const components = new Set()
-        caseList.value.forEach(item => {
+        filteredList.value.forEach(item => {
           if (item.components) {
             item.components.split('、').forEach(comp => {
               components.add(comp.trim())
@@ -469,17 +491,17 @@ export default {
         const currentMonth = now.getMonth()
         const currentYear = now.getFullYear()
         
-        return caseList.value.filter(item => {
+        return filteredList.value.filter(item => {
           if (!item.createTime) return false
           const createDate = new Date(item.createTime)
           return createDate.getMonth() === currentMonth && createDate.getFullYear() === currentYear
         }).length
       })
       
-      // 行业分布统计
+      // 行业分布统计 - 基于筛选后的数据
       const industryStats = computed(() => {
         const industryMap = {}
-        caseList.value.forEach(item => {
+        filteredList.value.forEach(item => {
           if (item.industry) {
             industryMap[item.industry] = (industryMap[item.industry] || 0) + 1
           }
@@ -497,10 +519,10 @@ export default {
         }))
       })
       
-      // 组件使用统计
+      // 组件使用统计 - 基于筛选后的数据
       const componentStats = computed(() => {
         const componentMap = {}
-        caseList.value.forEach(item => {
+        filteredList.value.forEach(item => {
           if (item.components) {
             item.components.split('、').forEach(comp => {
               const component = comp.trim()
@@ -546,6 +568,18 @@ export default {
       if (filters.holiday) {
         result = result.filter(item => item.holiday === filters.holiday)
       }
+      if (filters.month) {
+        result = result.filter(item => {
+          // 优先使用发布时间，如果没有则使用创建时间
+          const dateToCheck = item.publishDate || item.createTime
+          if (dateToCheck) {
+            const date = new Date(dateToCheck)
+            const month = date.getMonth() + 1 // getMonth()返回0-11，需要+1
+            return month.toString() === filters.month
+          }
+          return false
+        })
+      }
       
       return result
     })
@@ -580,6 +614,7 @@ export default {
       filters.industry = ''
       filters.memberType = ''
       filters.holiday = ''
+      filters.month = ''
       currentPage.value = 1
     }
 
