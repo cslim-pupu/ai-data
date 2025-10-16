@@ -1,6 +1,7 @@
 import { createRouter, createWebHistory } from 'vue-router'
 import CaseForm from '../views/CaseForm.vue'
 import CaseList from '../views/CaseList.vue'
+import DataMigration from '../components/DataMigration.vue'
 
 const routes = [
   {
@@ -16,6 +17,11 @@ const routes = [
     path: '/list',
     name: 'CaseList',
     component: CaseList
+  },
+  {
+    path: '/migration',
+    name: 'DataMigration',
+    component: DataMigration
   }
 ]
 

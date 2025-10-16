@@ -294,8 +294,8 @@
               {{ currentCase.wechatLink }}
             </el-link>
           </el-descriptions-item>
-          <el-descriptions-item label="使用组件" :span="2">{{ currentCase.components }}</el-descriptions-item>
-          <el-descriptions-item label="额外标签" :span="2">{{ currentCase.tags }}</el-descriptions-item>
+          <el-descriptions-item label="使用组件" :span="2">{{ toText(currentCase.components) }}</el-descriptions-item>
+          <el-descriptions-item label="额外标签" :span="2">{{ toText(currentCase.tags) }}</el-descriptions-item>
           <el-descriptions-item label="创建时间">{{ currentCase.createTime }}</el-descriptions-item>
           <el-descriptions-item label="更新时间">{{ currentCase.updateTime || '未更新' }}</el-descriptions-item>
         </el-descriptions>
@@ -321,6 +321,9 @@
           </el-form-item>
         <el-form-item label="公众号链接" prop="wechatLink">
           <el-input v-model="editForm.wechatLink" />
+        </el-form-item>
+        <el-form-item label="公众号名称" prop="wechatName">
+          <el-input v-model="editForm.wechatName" />
         </el-form-item>
         <el-form-item label="使用组件" prop="components">
           <el-input v-model="editForm.components" type="textarea" :rows="3" />
@@ -410,6 +413,7 @@ import { ExportManager } from '../utils/export.js'
 export default {
   name: 'CaseList',
   components: {
+    Search,
     Plus,
     ArrowDown
   },
@@ -440,6 +444,7 @@ export default {
       id: '',
       caseName: '',
       wechatLink: '',
+      wechatName: '',
       components: '',
       industry: '',
       publishDate: '',
@@ -456,6 +461,10 @@ export default {
         { required: true, message: '请输入公众号链接', trigger: 'blur' },
         { type: 'url', message: '请输入正确的链接格式', trigger: 'blur' }
       ],
+      wechatName: [
+        { required: true, message: '请输入公众号名称', trigger: 'blur' },
+        { min: 2, max: 50, message: '公众号名称长度在 2 到 50 个字符', trigger: 'blur' }
+      ],
       components: [{ required: true, message: '请输入使用的组件', trigger: 'blur' }],
       industry: [{ required: true, message: '请选择所属行业', trigger: 'change' }],
       publishDate: [{ required: true, message: '请选择发布时间', trigger: 'change' }],
@@ -467,83 +476,96 @@ export default {
 
     // 计算属性
     // 统计数据计算 - 基于筛选后的数据
-      const totalCases = computed(() => filteredList.value.length)
+    
+    // 统一解析组件字段，兼容数组或用顿号分隔的字符串
+    const parseComponents = (val) => {
+      if (!val) return []
+      if (Array.isArray(val)) return val.map(c => String(c).trim()).filter(Boolean)
+      if (typeof val === 'string') return val.split('、').map(c => c.trim()).filter(Boolean)
+      return []
+    }
+    
+    const toText = (val) => {
+      if (!val) return ''
+      if (Array.isArray(val)) return val.map(v => String(v).trim()).filter(Boolean).join('、')
+      return String(val)
+    }
+    
+    const totalCases = computed(() => filteredList.value.length)
+    
+    const industryCount = computed(() => {
+      const industries = new Set(filteredList.value.map(item => item.industry).filter(Boolean))
+      return industries.size
+    })
+    
+    const componentCount = computed(() => {
+      const components = new Set()
+      filteredList.value.forEach(item => {
+        const list = parseComponents(item.components)
+        list.forEach(comp => {
+          components.add(comp)
+        })
+      })
+      return components.size
+    })
+    
+    const recentCases = computed(() => {
+      const now = new Date()
+      const currentMonth = now.getMonth()
+      const currentYear = now.getFullYear()
       
-      const industryCount = computed(() => {
-        const industries = new Set(filteredList.value.map(item => item.industry).filter(Boolean))
-        return industries.size
+      return filteredList.value.filter(item => {
+        if (!item.createTime) return false
+        const createDate = new Date(item.createTime)
+        return createDate.getMonth() === currentMonth && createDate.getFullYear() === currentYear
+      }).length
+    })
+    
+    // 行业分布统计 - 基于筛选后的数据
+    const industryStats = computed(() => {
+      const industryMap = {}
+      filteredList.value.forEach(item => {
+        if (item.industry) {
+          industryMap[item.industry] = (industryMap[item.industry] || 0) + 1
+        }
       })
       
-      const componentCount = computed(() => {
-        const components = new Set()
-        filteredList.value.forEach(item => {
-          if (item.components) {
-            item.components.split('、').forEach(comp => {
-              components.add(comp.trim())
-            })
+      const stats = Object.entries(industryMap)
+        .map(([name, count]) => ({ name, count }))
+        .sort((a, b) => b.count - a.count)
+        .slice(0, 8) // 只显示前8个
+      
+      const maxCount = Math.max(...stats.map(item => item.count))
+      return stats.map(item => ({
+        ...item,
+        percentage: maxCount > 0 ? (item.count / maxCount) * 100 : 0
+      }))
+    })
+    
+    // 组件使用统计 - 基于筛选后的数据
+    const componentStats = computed(() => {
+      const componentMap = {}
+      filteredList.value.forEach(item => {
+        const list = parseComponents(item.components)
+        list.forEach(comp => {
+          const component = comp.trim()
+          if (component) {
+            componentMap[component] = (componentMap[component] || 0) + 1
           }
         })
-        return components.size
       })
       
-      const recentCases = computed(() => {
-        const now = new Date()
-        const currentMonth = now.getMonth()
-        const currentYear = now.getFullYear()
-        
-        return filteredList.value.filter(item => {
-          if (!item.createTime) return false
-          const createDate = new Date(item.createTime)
-          return createDate.getMonth() === currentMonth && createDate.getFullYear() === currentYear
-        }).length
-      })
+      const stats = Object.entries(componentMap)
+        .map(([name, count]) => ({ name, count }))
+        .sort((a, b) => b.count - a.count)
+        .slice(0, 8) // 只显示前8个
       
-      // 行业分布统计 - 基于筛选后的数据
-      const industryStats = computed(() => {
-        const industryMap = {}
-        filteredList.value.forEach(item => {
-          if (item.industry) {
-            industryMap[item.industry] = (industryMap[item.industry] || 0) + 1
-          }
-        })
-        
-        const stats = Object.entries(industryMap)
-          .map(([name, count]) => ({ name, count }))
-          .sort((a, b) => b.count - a.count)
-          .slice(0, 8) // 只显示前8个
-        
-        const maxCount = Math.max(...stats.map(item => item.count))
-        return stats.map(item => ({
-          ...item,
-          percentage: maxCount > 0 ? (item.count / maxCount) * 100 : 0
-        }))
-      })
-      
-      // 组件使用统计 - 基于筛选后的数据
-      const componentStats = computed(() => {
-        const componentMap = {}
-        filteredList.value.forEach(item => {
-          if (item.components) {
-            item.components.split('、').forEach(comp => {
-              const component = comp.trim()
-              if (component) {
-                componentMap[component] = (componentMap[component] || 0) + 1
-              }
-            })
-          }
-        })
-        
-        const stats = Object.entries(componentMap)
-          .map(([name, count]) => ({ name, count }))
-          .sort((a, b) => b.count - a.count)
-          .slice(0, 8) // 只显示前8个
-        
-        const maxCount = Math.max(...stats.map(item => item.count))
-        return stats.map(item => ({
-          ...item,
-          percentage: maxCount > 0 ? (item.count / maxCount) * 100 : 0
-        }))
-      })
+      const maxCount = Math.max(...stats.map(item => item.count))
+      return stats.map(item => ({
+        ...item,
+        percentage: maxCount > 0 ? (item.count / maxCount) * 100 : 0
+      }))
+    })
 
     const filteredList = computed(() => {
       let result = [...caseList.value]
@@ -552,10 +574,10 @@ export default {
       if (searchKeyword.value) {
         const keyword = searchKeyword.value.toLowerCase()
         result = result.filter(item => 
-          item.caseName.toLowerCase().includes(keyword) ||
-          item.components.toLowerCase().includes(keyword) ||
-          item.tags.toLowerCase().includes(keyword) ||
-          item.holiday.toLowerCase().includes(keyword)
+          toText(item.caseName).toLowerCase().includes(keyword) ||
+          toText(item.components).toLowerCase().includes(keyword) ||
+          toText(item.tags).toLowerCase().includes(keyword) ||
+          toText(item.holiday).toLowerCase().includes(keyword)
         )
       }
       
@@ -591,10 +613,18 @@ export default {
     })
 
     // 方法
-    const loadData = () => {
+    const loadData = async () => {
       loading.value = true
       try {
-        caseList.value = StorageManager.getCaseList()
+        const data = await StorageManager.getCaseList()
+        // 统一字段映射，确保表格列有值
+        caseList.value = (data || []).map(item => ({
+          ...item,
+          caseName: item.caseName || item.title || '',
+          wechatName: item.wechatName || item.wechat_name || '',
+          publishDate: item.publishDate || item.publish_date || '',
+          author: item.author || item.created_by || ''
+        }))
       } catch (error) {
         ElMessage.error('加载数据失败')
       } finally {
@@ -638,7 +668,13 @@ export default {
     }
 
     const editCase = (row) => {
-      Object.assign(editForm, row)
+      const normalized = {
+        ...row,
+        components: Array.isArray(row.components) ? row.components.join('、') : (row.components || ''),
+        tags: Array.isArray(row.tags) ? row.tags.join('、') : (row.tags || ''),
+        wechatName: row.wechatName || row.wechat_name || ''
+      }
+      Object.assign(editForm, normalized)
       editVisible.value = true
     }
 
@@ -654,31 +690,29 @@ export default {
       
       try {
         await editFormRef.value.validate()
-        saveLoading.value = true
         
-        // 检查公众号链接是否与其他案例重复（排除当前编辑的案例）
-        const existingCases = StorageManager.getCaseList()
-        const isDuplicate = existingCases.some(existingCase => 
-          existingCase.wechatLink === editForm.wechatLink && existingCase.id !== editForm.id
-        )
+        console.log('=== 编辑保存调试信息 ===')
+        console.log('editForm 完整数据:', JSON.stringify(editForm, null, 2))
+        console.log('wechatLink:', editForm.wechatLink)
+        console.log('wechatName:', editForm.wechatName)
+        console.log('========================')
         
-        if (isDuplicate) {
-          ElMessage.error('该公众号链接已存在，请检查是否重复录入')
-          return
+        const updatedCase = await StorageManager.updateCase(editForm.id, editForm)
+        
+        // 更新本地列表数据
+        const index = caseList.value.findIndex(item => item.id === editForm.id)
+        if (index !== -1) {
+          caseList.value[index] = { ...caseList.value[index], ...updatedCase }
         }
         
-        const updatedCase = StorageManager.updateCase(editForm.id, editForm)
-        if (updatedCase) {
-          loadData()
-          ElMessage.success('案例更新成功')
-          editVisible.value = false
-        } else {
-          ElMessage.error('更新失败')
-        }
+        editVisible.value = false
+        ElMessage.success('案例更新成功')
+        
+        // 刷新数据以确保同步
+        await loadData()
       } catch (error) {
-        ElMessage.error('请完善表单信息')
-      } finally {
-        saveLoading.value = false
+        console.error('保存失败:', error)
+        ElMessage.error('保存失败: ' + error.message)
       }
     }
 
@@ -692,10 +726,10 @@ export default {
           type: 'warning',
           confirmButtonClass: 'el-button--danger'
         }
-      ).then(() => {
-        StorageManager.deleteCase(caseItem.id)
+      ).then(async () => {
+        await StorageManager.deleteCase(caseItem.id)
         ElMessage.success('案例删除成功！')
-        loadData()
+        await loadData()
       }).catch(() => {
         ElMessage.info('已取消删除')
       })
@@ -754,7 +788,9 @@ export default {
       handleCloseEdit,
       saveEdit,
       deleteCase,
-      handleExport
+      handleExport,
+      // 暴露 toText 用于模板渲染数组字段
+      toText
     }
   }
 }

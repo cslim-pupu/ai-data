@@ -9,11 +9,13 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@supabase/supabase-js": "^2.75.0",
+    "dayjs": "^1.11.9",
+    "element-plus": "^2.3.8",
+    "papaparse": "^5.5.3",
     "vue": "^3.3.4",
     "vue-router": "^4.2.4",
-    "element-plus": "^2.3.8",
-    "xlsx": "^0.18.5",
-    "dayjs": "^1.11.9"
+    "xlsx": "^0.18.5"
   },
   "devDependencies": {
     "@vitejs/plugin-vue": "^4.2.3",

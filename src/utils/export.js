@@ -11,13 +11,14 @@ export class ExportManager {
     // 准备导出数据
     const exportData = data.map(item => ({
       '案例名称': item.caseName,
+      '公众号名称': item.wechatName,
       '公众号链接': item.wechatLink,
-      '使用组件': item.components,
+      '使用组件': Array.isArray(item.components) ? item.components.join('、') : (item.components || ''),
       '所属行业': item.industry,
       '发布时间': item.publishDate,
       '节日标签': item.holiday,
       '会员类型': item.memberType,
-      '额外标签': item.tags,
+      '额外标签': Array.isArray(item.tags) ? item.tags.join('、') : (item.tags || ''),
       '填写人': item.author,
       '创建时间': item.createTime,
       '更新时间': item.updateTime || ''
@@ -30,6 +31,7 @@ export class ExportManager {
     // 设置列宽
     const colWidths = [
       { wch: 20 }, // 案例名称
+      { wch: 15 }, // 公众号名称
       { wch: 40 }, // 公众号链接
       { wch: 30 }, // 使用组件
       { wch: 10 }, // 所属行业
@@ -65,6 +67,7 @@ export class ExportManager {
     // 准备CSV头部
     const headers = [
       '案例名称',
+      '公众号名称',
       '公众号链接',
       '使用组件',
       '所属行业',
@@ -80,13 +83,14 @@ export class ExportManager {
     // 准备CSV数据
     const csvData = data.map(item => [
       item.caseName,
+      item.wechatName,
       item.wechatLink,
-      item.components,
+      Array.isArray(item.components) ? item.components.join('、') : (item.components || ''),
       item.industry,
       item.publishDate,
       item.holiday,
       item.memberType,
-      item.tags,
+      Array.isArray(item.tags) ? item.tags.join('、') : (item.tags || ''),
       item.author,
       item.createTime,
       item.updateTime || ''

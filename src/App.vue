@@ -21,6 +21,10 @@
               <el-icon><List /></el-icon>
               <span>案例列表</span>
             </el-menu-item>
+            <el-menu-item index="/migration">
+              <el-icon><Upload /></el-icon>
+              <span>数据迁移</span>
+            </el-menu-item>
           </el-menu>
         </div>
       </el-header>
@@ -32,13 +36,14 @@
 </template>
 
 <script>
-import { EditPen, List } from '@element-plus/icons-vue'
+import { EditPen, List, Upload } from '@element-plus/icons-vue'
 
 export default {
   name: 'App',
   components: {
     EditPen,
-    List
+    List,
+    Upload
   }
 }
 </script>

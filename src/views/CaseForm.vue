@@ -190,7 +190,7 @@
             placeholder="请输入额外标签"
             clearable
           />
-          <div class="form-tip">填 1-3 个关键词，用逗号分开，如："国庆促销、节日氛围、产品展示"</div>
+          <div class="form-tip">填 1-3 个关键词，用顿号分开，如："国庆促销、节日氛围、产品展示"</div>
         </el-form-item>
 
         <!-- 填写人 -->
@@ -256,7 +256,7 @@ export default {
       }
       
       try {
-        const existingCases = StorageManager.getCaseList()
+        const existingCases = await StorageManager.getCaseList()
         console.log('检查标题重复 - 现有案例:', existingCases)
         console.log('检查标题重复 - 当前标题:', form.caseName.trim())
         
@@ -288,7 +288,7 @@ export default {
       }
       
       try {
-        const existingCases = StorageManager.getCaseList()
+        const existingCases = await StorageManager.getCaseList()
         console.log('检查链接重复 - 现有案例:', existingCases)
         console.log('检查链接重复 - 当前链接:', form.wechatLink.trim())
         
@@ -399,7 +399,7 @@ export default {
         loading.value = true
         
         // 检查公众号链接是否已存在
-        const existingCases = StorageManager.getCaseList()
+        const existingCases = await StorageManager.getCaseList()
         const isDuplicate = existingCases.some(existingCase => 
           existingCase.wechatLink === form.wechatLink
         )
@@ -415,7 +415,7 @@ export default {
           createTime: new Date().toISOString()
         }
         
-        StorageManager.addCase(caseData)
+        await StorageManager.addCase(caseData)
         ElMessage.success('案例添加成功！')
         resetForm()
         
