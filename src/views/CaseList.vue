@@ -51,6 +51,8 @@
             <el-option label="自媒体" value="自媒体" />
             <el-option label="艺术设计" value="艺术设计" />
             <el-option label="潮玩" value="潮玩" />
+            <el-option label="酒类" value="酒类" />
+            <el-option label="食品" value="食品" />
             <el-option label="其他" value="其他" />
           </el-select>
 
@@ -357,6 +359,8 @@
               <el-option label="自媒体" value="自媒体" />
               <el-option label="艺术设计" value="艺术设计" />
               <el-option label="潮玩" value="潮玩" />
+              <el-option label="酒类" value="酒类" />
+              <el-option label="食品" value="食品" />
               <el-option label="其他" value="其他" />
             </el-select>
           </el-form-item>
