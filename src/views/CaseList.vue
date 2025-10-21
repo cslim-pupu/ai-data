@@ -374,11 +374,34 @@
           />
         </el-form-item>
         <el-form-item label="节日标签" prop="holiday">
-          <el-select v-model="editForm.holiday" style="width: 100%">
+          <el-select v-model="editForm.holiday" style="width: 100%" filterable allow-create default-first-option>
             <el-option label="元旦" value="元旦" />
             <el-option label="春节" value="春节" />
-            <el-option label="中秋" value="中秋" />
-            <el-option label="国庆" value="国庆" />
+            <el-option label="元宵节" value="元宵节" />
+            <el-option label="情人节" value="情人节" />
+            <el-option label="妇女节" value="妇女节" />
+            <el-option label="植树节" value="植树节" />
+            <el-option label="愚人节" value="愚人节" />
+            <el-option label="清明节" value="清明节" />
+            <el-option label="劳动节" value="劳动节" />
+            <el-option label="青年节" value="青年节" />
+            <el-option label="母亲节" value="母亲节" />
+            <el-option label="儿童节" value="儿童节" />
+            <el-option label="端午节" value="端午节" />
+            <el-option label="父亲节" value="父亲节" />
+            <el-option label="建党节" value="建党节" />
+            <el-option label="建军节" value="建军节" />
+            <el-option label="七夕节" value="七夕节" />
+            <el-option label="中秋节" value="中秋节" />
+            <el-option label="教师节" value="教师节" />
+            <el-option label="国庆节" value="国庆节" />
+            <el-option label="重阳节" value="重阳节" />
+            <el-option label="万圣节" value="万圣节" />
+            <el-option label="感恩节" value="感恩节" />
+            <el-option label="圣诞节" value="圣诞节" />
+            <el-option label="双十一" value="双十一" />
+            <el-option label="双十二" value="双十二" />
+            <el-option label="618购物节" value="618购物节" />
             <el-option label="无特定节日" value="无特定节日" />
           </el-select>
         </el-form-item>
