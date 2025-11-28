@@ -16,6 +16,18 @@ export class StorageManager {
       
       if (error) {
         console.error('获取案例数据失败:', error)
+        console.error('错误详情:', {
+          message: error.message,
+          code: error.code,
+          details: error.details,
+          hint: error.hint
+        })
+        
+        // 如果是开发环境，提示详细错误
+        if (import.meta.env.DEV) {
+          console.warn('开发环境提示 - 获取数据失败:', error.message)
+        }
+
         // 如果云端获取失败，尝试从本地获取并进行同样的字段映射
         const local = this.getLocalCaseList() || []
         const mappedLocal = local.map(item => ({
