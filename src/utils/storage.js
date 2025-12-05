@@ -4,54 +4,21 @@ import { supabase } from './supabase.js'
 const STORAGE_KEY = 'case_data_list'
 const BACKUP_KEY = 'case_data_backup'
 
+// 使用 Vercel API 代理地址
+const API_URL = '/api/cases'
+
 export class StorageManager {
   // 获取所有案例数据
   static async getCaseList() {
     try {
-      const { data, error } = await supabase
-        .from('cases')
-        .select('*')
-        .eq('is_active', true)
-        .order('create_time', { ascending: false })
+      // 优先尝试从 Vercel API 获取（通过代理连接 Supabase）
+      const response = await fetch(API_URL)
       
-      if (error) {
-        console.error('获取案例数据失败:', error)
-        console.error('错误详情:', {
-          message: error.message,
-          code: error.code,
-          details: error.details,
-          hint: error.hint
-        })
-        
-        // 如果是开发环境，提示详细错误
-        if (import.meta.env.DEV) {
-          console.warn('开发环境提示 - 获取数据失败:', error.message)
-        }
-
-        // 如果云端获取失败，尝试从本地获取并进行同样的字段映射
-        const local = this.getLocalCaseList() || []
-        const mappedLocal = local.map(item => ({
-          ...item,
-          caseName: item.title,
-          wechatName: item.wechat_name,
-          wechatLink: item.wechat_link || item.case_link,
-          caseLink: item.case_link || item.wechat_link,
-          industry: item.industry,
-          holiday: item.holiday || '',
-          tags: Array.isArray(item.tags) ? item.tags : (typeof item.tags === 'string' ? item.tags.split(',').map(t => t.trim()).filter(Boolean) : []),
-          components: Array.isArray(item.components) ? item.components : (typeof item.components === 'string' ? item.components.split(/[、,，]/).map(s => s.trim()).filter(Boolean) : []),
-          memberType: item.member_type,
-          publishDate: item.publish_date,
-          createTime: item.create_time,
-          updateTime: item.update_time,
-          author: item.created_by || '',
-          member_type: item.member_type,
-          publish_date: item.publish_date,
-          create_time: item.create_time,
-          update_time: item.update_time
-        }))
-        return mappedLocal
+      if (!response.ok) {
+        throw new Error(`API request failed: ${response.statusText}`)
       }
+
+      const data = await response.json()
       
       // 字段名映射：数据库字段 -> 前端字段
       const mappedData = (data || []).map(item => ({
@@ -75,9 +42,12 @@ export class StorageManager {
         update_time: item.update_time
       }))
       
+      // 成功获取后，更新本地缓存
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(mappedData))
+      
       return mappedData
     } catch (err) {
-      console.error('网络错误:', err)
+      console.error('API 获取失败，降级使用本地缓存:', err)
       // 网络错误时从本地获取
       return this.getLocalCaseList()
     }
@@ -116,24 +86,44 @@ export class StorageManager {
         is_active: true
       }
 
-      const { data, error } = await supabase
-        .from('cases')
-        .insert([newCase])
-        .select()
-        .single()
+      const response = await fetch(API_URL, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(newCase)
+      })
 
-      if (error) {
-        console.error('添加案例失败:', error)
-        // 如果云端添加失败，添加到本地
-        return this.addLocalCase(caseData)
+      if (!response.ok) {
+        throw new Error(`API request failed: ${response.statusText}`)
       }
+
+      const data = await response.json()
 
       // 同时保存到本地备份
       const localList = this.getLocalCaseList()
-      localList.unshift(data)
+      // 映射回前端格式以便立即显示
+      const mappedData = {
+        ...data,
+        caseName: data.title,
+        wechatName: data.wechat_name,
+        wechatLink: data.wechat_link || data.case_link,
+        caseLink: data.case_link || data.wechat_link,
+        industry: data.industry,
+        holiday: data.holiday || '',
+        tags: Array.isArray(data.tags) ? data.tags : (typeof data.tags === 'string' ? data.tags.split(',').map(t => t.trim()).filter(Boolean) : []),
+        components: Array.isArray(data.components) ? data.components : (typeof data.components === 'string' ? data.components.split(/[、,，]/).map(s => s.trim()).filter(Boolean) : []),
+        memberType: data.member_type,
+        publishDate: data.publish_date,
+        createTime: data.create_time,
+        updateTime: data.update_time,
+        author: data.created_by || '',
+      }
+      
+      localList.unshift(mappedData)
       localStorage.setItem(STORAGE_KEY, JSON.stringify(localList))
 
-      return data
+      return mappedData
     } catch (err) {
       console.error('网络错误:', err)
       return this.addLocalCase(caseData)
@@ -160,6 +150,7 @@ export class StorageManager {
       console.log('updateCase 接收到的数据:', { id, caseData });
       
       const updateData = {
+        id: id, // 必须传 ID
         title: caseData.title || caseData.caseName,
         description: caseData.description || '',
         industry: caseData.industry || '',
@@ -175,60 +166,40 @@ export class StorageManager {
         update_time: new Date().toISOString()
       }
 
-      console.log('准备更新数据库的数据:', updateData);
-      console.log('更新的案例 ID:', id);
+      const response = await fetch(API_URL, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(updateData)
+      })
 
-      const { data, error } = await supabase
-        .from('cases')
-        .update(updateData)
-        .eq('id', id)
-        .select()
-        .single()
-
-      if (error) {
-        console.error('Supabase 更新错误详情:', {
-          message: error.message,
-          details: error.details,
-          hint: error.hint,
-          code: error.code
-        });
-        
-        // 仅当明确命中"缺列"错误时才降级重试
-        const downgraded = removeMissingColumnsAndLog(error, updateData)
-        if (downgraded) {
-          console.log('尝试降级重试，移除的字段:', Object.keys(updateData).filter(key => !(key in downgraded)));
-          const retry = await supabase
-            .from('cases')
-            .update(downgraded)
-            .eq('id', id)
-            .select()
-            .single()
-          if (retry.error) {
-            console.error('降级重试更新仍失败:', retry.error)
-            throw new Error(retry.error.message)
-          }
-          console.log('成功更新数据库(降级字段集):', retry.data)
-          return retry.data
-        }
-        // 未命中缺列，不做降级，直接抛错以便定位真实问题
-        console.error('更新失败（未降级）:', error)
-        throw new Error(error.message)
+      if (!response.ok) {
+        throw new Error(`API request failed: ${response.statusText}`)
       }
 
-      console.log('成功更新数据库:', data);
+      const data = await response.json()
       
-      // 同步更新本地存储
-      const localCases = this.getLocalCaseList()
-      const index = localCases.findIndex(item => item.id === id)
+      // 更新成功后，刷新本地缓存
+      const localList = this.getLocalCaseList()
+      const index = localList.findIndex(item => item.id === id)
       if (index !== -1) {
-        localCases[index] = { ...localCases[index], ...updateData }
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(localCases))
+        // 简单合并更新
+        localList[index] = { ...localList[index], ...caseData }
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(localList))
       }
 
       return data
     } catch (err) {
-      console.error('更新案例失败:', err)
-      throw err
+      console.error('网络错误:', err)
+      // 如果网络失败，降级更新本地
+      const localList = this.getLocalCaseList()
+      const index = localList.findIndex(item => item.id === id)
+      if (index !== -1) {
+        localList[index] = { ...localList[index], ...caseData }
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(localList))
+      }
+      return localList[index]
     }
   }
 
