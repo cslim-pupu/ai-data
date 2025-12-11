@@ -445,16 +445,17 @@
 <script>
 import { ref, reactive, computed, onMounted } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import { Search, Plus, ArrowDown } from '@element-plus/icons-vue'
-import { StorageManager } from '../utils/storage.js'
-import { ExportManager } from '../utils/export.js'
+import { Search, Plus, ArrowDown, Delete } from '@element-plus/icons-vue'
+import { StorageManager } from '../utils/storage'
+import { ExportManager } from '../utils/export'
 
 export default {
   name: 'CaseList',
   components: {
     Search,
     Plus,
-    ArrowDown
+    ArrowDown,
+    Delete
   },
   setup() {
     const loading = ref(false)
@@ -463,6 +464,7 @@ export default {
     const searchKeyword = ref('')
     const currentPage = ref(1)
     const pageSize = ref(20)
+    const selectedRows = ref([])
     
     // 筛选条件
     const filters = reactive({
@@ -651,6 +653,40 @@ export default {
       return filteredList.value.slice(start, end)
     })
 
+    const handleSelectionChange = (val) => {
+      selectedRows.value = val
+    }
+
+    const handleBatchDelete = () => {
+      if (selectedRows.value.length === 0) return
+
+      ElMessageBox.confirm(
+        `确定要删除选中的 ${selectedRows.value.length} 条案例吗？此操作不可恢复！`,
+        '批量删除警告',
+        {
+          confirmButtonText: '确定删除',
+          cancelButtonText: '取消',
+          type: 'warning',
+        }
+      ).then(async () => {
+        loading.value = true
+        try {
+          const ids = selectedRows.value.map(row => row.id)
+          await StorageManager.batchDeleteCases(ids)
+          ElMessage.success('批量删除成功')
+          await loadData()
+          selectedRows.value = []
+        } catch (error) {
+          console.error('批量删除失败:', error)
+          ElMessage.error('删除失败，请重试')
+        } finally {
+          loading.value = false
+        }
+      }).catch(() => {
+        // 取消删除
+      })
+    }
+    
     // 方法
     const loadData = async () => {
       loading.value = true
@@ -829,7 +865,10 @@ export default {
       deleteCase,
       handleExport,
       // 暴露 toText 用于模板渲染数组字段
-      toText
+      toText,
+      selectedRows,
+      handleSelectionChange,
+      handleBatchDelete
     }
   }
 }
