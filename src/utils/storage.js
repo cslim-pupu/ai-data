@@ -222,14 +222,12 @@ export class StorageManager {
   // 删除案例（软删除）
   static async deleteCase(id) {
     try {
-      const { error } = await supabase
-        .from('cases')
-        .update({ is_active: false })
-        .eq('id', id)
+      const response = await fetch(`${API_URL}?id=${id}`, {
+        method: 'DELETE'
+      })
 
-      if (error) {
-        console.error('删除案例失败:', error)
-        return this.deleteLocalCase(id)
+      if (!response.ok) {
+        throw new Error(`API request failed: ${response.statusText}`)
       }
 
       // 同时从本地备份中删除
@@ -239,8 +237,43 @@ export class StorageManager {
 
       return filteredList
     } catch (err) {
-      console.error('网络错误:', err)
+      console.error('网络错误，尝试本地删除:', err)
       return this.deleteLocalCase(id)
+    }
+  }
+
+  // 批量删除案例
+  static async batchDeleteCases(ids) {
+    if (!ids || ids.length === 0) return
+
+    try {
+      const response = await fetch(API_URL, {
+        method: 'DELETE',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ ids })
+      })
+
+      if (!response.ok) {
+        throw new Error(`API request failed: ${response.statusText}`)
+      }
+
+      // 同时从本地备份中删除
+      const localList = this.getLocalCaseList()
+      const filteredList = localList.filter(item => !ids.includes(item.id))
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(filteredList))
+
+      return filteredList
+    } catch (err) {
+      console.error('网络错误，尝试本地批量删除:', err)
+      
+      // 本地批量删除逻辑
+      const localList = this.getLocalCaseList()
+      const filteredList = localList.filter(item => !ids.includes(item.id))
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(filteredList))
+      
+      return filteredList
     }
   }
 

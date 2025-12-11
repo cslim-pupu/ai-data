@@ -33,6 +33,7 @@ export default async function handler(req, res) {
       const { data, error } = await supabase
         .from('cases')
         .select('*')
+        .eq('is_active', true)
         .order('create_time', { ascending: false })
       
       if (error) throw error
@@ -67,8 +68,34 @@ export default async function handler(req, res) {
       return res.status(200).json(data)
     }
 
+    else if (req.method === 'DELETE') {
+      // 删除数据（软删除）
+      // 支持单个删除（Query Params: ?id=1）或批量删除（Body: { ids: [1, 2] }）
+      
+      let ids = []
+      
+      if (req.query.id) {
+        ids = [req.query.id]
+      } else if (req.body && Array.isArray(req.body.ids)) {
+        ids = req.body.ids
+      }
+
+      if (ids.length === 0) {
+        return res.status(400).json({ error: '未提供要删除的 ID' })
+      }
+
+      const { data, error } = await supabase
+        .from('cases')
+        .update({ is_active: false })
+        .in('id', ids)
+        .select()
+
+      if (error) throw error
+      return res.status(200).json(data)
+    }
+
     else {
-      res.setHeader('Allow', ['GET', 'POST', 'PUT'])
+      res.setHeader('Allow', ['GET', 'POST', 'PUT', 'DELETE'])
       return res.status(405).end(`Method ${req.method} Not Allowed`)
     }
 
