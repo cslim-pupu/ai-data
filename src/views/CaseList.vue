@@ -255,7 +255,21 @@
         @selection-change="handleSelectionChange"
       >
         <el-table-column type="selection" width="55" />
-        <el-table-column prop="caseName" label="图文标题" width="200" show-overflow-tooltip />
+        <el-table-column label="图文标题" width="200" show-overflow-tooltip>
+          <template #default="{ row }">
+            <el-link 
+              v-if="row.wechatLink" 
+              :href="row.wechatLink" 
+              target="_blank" 
+              type="primary"
+              :underline="false"
+              class="title-link"
+            >
+              {{ row.caseName }}
+            </el-link>
+            <span v-else>{{ row.caseName }}</span>
+          </template>
+        </el-table-column>
         <el-table-column prop="wechatName" label="公众号名称" width="150" show-overflow-tooltip />
         <el-table-column prop="industry" label="行业" width="100" />
         <el-table-column prop="memberType" label="会员类型" width="120" />
