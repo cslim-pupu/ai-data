@@ -85,7 +85,15 @@
 
         <!-- 用户所属行业 -->
         <el-form-item label="所属行业" prop="industry">
-          <el-select v-model="form.industry" placeholder="请选择行业" style="width: 100%" filterable>
+          <el-select 
+            v-model="form.industry" 
+            placeholder="请选择行业或自定义输入" 
+            style="width: 100%" 
+            filterable 
+            allow-create 
+            default-first-option
+          >
+            <el-option label="互联网" value="互联网" />
             <el-option label="工业" value="工业" />
             <el-option label="珠宝" value="珠宝" />
             <el-option label="教育" value="教育" />

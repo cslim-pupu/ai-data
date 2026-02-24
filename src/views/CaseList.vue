@@ -21,9 +21,12 @@
             placeholder="选择行业"
             clearable
             filterable
+            allow-create
+            default-first-option
             style="width: 120px; margin-right: 10px;"
             @change="handleFilter"
           >
+            <el-option label="互联网" value="互联网" />
             <el-option label="工业" value="工业" />
             <el-option label="珠宝" value="珠宝" />
             <el-option label="教育" value="教育" />
@@ -357,7 +360,8 @@
           <el-input v-model="editForm.components" type="textarea" :rows="3" />
         </el-form-item>
         <el-form-item label="所属行业" prop="industry">
-            <el-select v-model="editForm.industry" style="width: 100%" filterable>
+            <el-select v-model="editForm.industry" style="width: 100%" filterable allow-create default-first-option>
+              <el-option label="互联网" value="互联网" />
               <el-option label="工业" value="工业" />
               <el-option label="珠宝" value="珠宝" />
               <el-option label="教育" value="教育" />
