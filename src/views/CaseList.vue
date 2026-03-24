@@ -592,7 +592,6 @@ export default {
       const stats = Object.entries(industryMap)
         .map(([name, count]) => ({ name, count }))
         .sort((a, b) => b.count - a.count)
-        .slice(0, 8) // 只显示前8个
       
       const maxCount = Math.max(...stats.map(item => item.count))
       return stats.map(item => ({
@@ -617,7 +616,6 @@ export default {
       const stats = Object.entries(componentMap)
         .map(([name, count]) => ({ name, count }))
         .sort((a, b) => b.count - a.count)
-        .slice(0, 8) // 只显示前8个
       
       const maxCount = Math.max(...stats.map(item => item.count))
       return stats.map(item => ({
@@ -946,7 +944,22 @@ export default {
 }
 
 .chart-container {
-  padding: 10px 0;
+  padding: 10px 10px 10px 0;
+  max-height: 300px;
+  overflow-y: auto;
+}
+
+.chart-container::-webkit-scrollbar {
+  width: 6px;
+}
+
+.chart-container::-webkit-scrollbar-thumb {
+  background: #dcdfe6;
+  border-radius: 3px;
+}
+
+.chart-container::-webkit-scrollbar-track {
+  background: transparent;
 }
 
 .chart-item {
