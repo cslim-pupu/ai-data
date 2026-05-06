@@ -279,7 +279,11 @@
         <el-table-column prop="publishDate" label="发布时间" width="100" />
         <el-table-column prop="holiday" label="节日" width="100" />
         <el-table-column prop="author" label="填写人" width="100" />
-        <el-table-column prop="createTime" label="创建时间" width="160" />
+        <el-table-column label="创建时间" width="160">
+          <template #default="{ row }">
+            {{ formatDateTime(row.createTime) }}
+          </template>
+        </el-table-column>
         
         <el-table-column label="操作" width="200" fixed="right">
           <template #default="{ row }">
@@ -327,8 +331,8 @@
           </el-descriptions-item>
           <el-descriptions-item label="使用组件" :span="2">{{ toText(currentCase.components) }}</el-descriptions-item>
           <el-descriptions-item label="额外标签" :span="2">{{ toText(currentCase.tags) }}</el-descriptions-item>
-          <el-descriptions-item label="创建时间">{{ currentCase.createTime }}</el-descriptions-item>
-          <el-descriptions-item label="更新时间">{{ currentCase.updateTime || '未更新' }}</el-descriptions-item>
+          <el-descriptions-item label="创建时间">{{ formatDateTime(currentCase.createTime) }}</el-descriptions-item>
+          <el-descriptions-item label="更新时间">{{ currentCase.updateTime ? formatDateTime(currentCase.updateTime) : '未更新' }}</el-descriptions-item>
         </el-descriptions>
       </div>
     </el-dialog>
@@ -462,6 +466,7 @@
 
 <script>
 import { ref, reactive, computed, onMounted } from 'vue'
+import dayjs from 'dayjs'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { Search, Plus, ArrowDown, Delete } from '@element-plus/icons-vue'
 import { StorageManager } from '../utils/storage'
@@ -548,6 +553,13 @@ export default {
       if (!val) return ''
       if (Array.isArray(val)) return val.map(v => String(v).trim()).filter(Boolean).join('、')
       return String(val)
+    }
+
+    const formatDateTime = (val) => {
+      if (!val) return '-'
+      const parsed = dayjs(val)
+      if (!parsed.isValid()) return String(val)
+      return parsed.format('YYYY-MM-DD HH:mm')
     }
     
     const totalCases = computed(() => filteredList.value.length)
@@ -882,6 +894,7 @@ export default {
       handleExport,
       // 暴露 toText 用于模板渲染数组字段
       toText,
+      formatDateTime,
       selectedRows,
       handleSelectionChange,
       handleBatchDelete
