@@ -540,35 +540,28 @@ const importData = async () => {
       }
 
       if (existingTitles.has(item.title)) {
+        // 标题已存在：用导入的数据覆盖更新该条记录
         const existing = existingByTitle.get(item.title)
-        const newLink = item.wechat_link || item.case_link
-        const oldLink = (existing?.wechat_link) || (existing?.case_link)
-        // 如果云端该条记录缺链接，而导入数据有链接，则执行补齐更新
-        if (!oldLink && newLink) {
-          try {
-            const patchCaseData = {
-              title: existing.title,
-              description: existing.description || '',
-              industry: existing.industry || '',
-              memberType: existing.member_type || '',
-              holiday: existing.holiday || '',
-              components: Array.isArray(existing.components) ? existing.components : (typeof existing.components === 'string' ? existing.components.split(/[、,，]/).map(s => s.trim()).filter(Boolean) : []),
-              tags: Array.isArray(existing.tags) ? existing.tags : (typeof existing.tags === 'string' ? existing.tags.split(',').map(t => t.trim()).filter(Boolean) : []),
-              publishDate: existing.publish_date || '',
-              wechatName: existing.wechat_name || '',
-              wechatLink: item.wechat_link || existing.wechat_link || '',
-              caseLink: item.case_link || existing.case_link || '',
-              author: existing.created_by || ''
-            }
-            await StorageManager.updateCase(existing.id, patchCaseData)
-            console.log('补齐公众号链接成功:', existing.title)
-            updated++
-          } catch (e) {
-            console.error('补齐链接失败:', e)
-            skipped++
+        try {
+          const patchCaseData = {
+            title: item.title,
+            description: item.description || '',
+            industry: item.industry || '',
+            memberType: item.member_type || '',
+            holiday: item.holiday || '',
+            components: Array.isArray(item.components) ? item.components : [],
+            tags: Array.isArray(item.tags) ? item.tags : [],
+            publishDate: item.publish_date || '',
+            wechatName: item.wechat_name || '',
+            wechatLink: item.wechat_link || '',
+            caseLink: item.case_link || '',
+            author: item.created_by || ''
           }
-        } else {
-          console.log('跳过：重复的标题', item.title);
+          await StorageManager.updateCase(existing.id, patchCaseData)
+          console.log('覆盖更新成功:', item.title)
+          updated++
+        } catch (e) {
+          console.error('覆盖更新失败:', e)
           skipped++
         }
         continue
@@ -596,7 +589,7 @@ const importData = async () => {
     // 刷新数据统计
     await loadDataCounts()
     
-    ElMessage.success(`导入完成！新导入 ${imported} 条，更新补齐 ${updated} 条${skipped > 0 ? `，跳过 ${skipped} 条重复数据` : ''}`)
+    ElMessage.success(`导入完成！新增 ${imported} 条，覆盖更新 ${updated} 条${skipped > 0 ? `，失败 ${skipped} 条` : ''}`)
     
     // 清空导入数据
     clearImportData()
