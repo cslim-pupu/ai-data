@@ -282,46 +282,86 @@ const handleFileChange = (file) => {
   }
 }
 
+// 解码 CSV 文件内容，优先 UTF-8，失败则回退到 GBK（Excel 中文版另存 CSV 常用编码）
+const decodeCSVBuffer = (buffer) => {
+  // 去掉 BOM（UTF-8 BOM: EF BB BF）
+  const bytes = new Uint8Array(buffer)
+  const hasBOM = bytes.length >= 3 && bytes[0] === 0xEF && bytes[1] === 0xBB && bytes[2] === 0xBF
+  const payload = hasBOM ? bytes.subarray(3) : bytes
+
+  // 先用 fatal UTF-8 尝试，能严格解码则认为是 UTF-8
+  try {
+    const decoder = new TextDecoder('utf-8', { fatal: true })
+    return decoder.decode(payload)
+  } catch (e) {
+    // 回退到 GBK（现代浏览器 TextDecoder 支持 gbk）
+    try {
+      const decoder = new TextDecoder('gbk')
+      console.warn('UTF-8 解码失败，回退使用 GBK 解码')
+      return decoder.decode(payload)
+    } catch (e2) {
+      // 最终兜底：非严格 UTF-8，避免直接抛错
+      return new TextDecoder('utf-8').decode(payload)
+    }
+  }
+}
+
 // 解析CSV文件
 const parseCSV = (file) => {
   console.log('开始解析CSV文件:', file.name)
-  Papa.parse(file, {
-    header: true,
-    encoding: 'UTF-8',
-    complete: (results) => {
-      console.log('CSV解析结果:', results)
-      if (results.errors.length > 0) {
-        console.error('CSV解析错误:', results.errors)
-        ElMessage.error('CSV文件解析失败: ' + results.errors[0].message)
-        return
-      }
-      
-      const validData = results.data.filter(row => {
-        return Object.values(row).some(value => value && value.toString().trim())
-      })
-      
-      console.log('有效数据行数:', validData.length)
-      
-      if (validData.length === 0) {
-        ElMessage.warning('文件中没有找到有效的数据')
-        return
-      }
-      
-      const normalizedData = validData.map(normalizeRowData).filter(row => row.title)
-      console.log('标准化后的数据:', normalizedData)
-      parsedData.value = normalizedData
-      
-      if (normalizedData.length > 0) {
-        ElMessage.success(`成功解析 ${normalizedData.length} 条数据`)
-      } else {
-        ElMessage.warning('没有找到包含标题的有效数据行')
-      }
-    },
-    error: (error) => {
-      console.error('CSV解析错误:', error)
-      ElMessage.error('CSV文件解析失败: ' + error.message)
+
+  const handleParseResult = (results) => {
+    console.log('CSV解析结果:', results)
+    if (results.errors.length > 0) {
+      console.error('CSV解析错误:', results.errors)
+      ElMessage.error('CSV文件解析失败: ' + results.errors[0].message)
+      return
     }
-  })
+
+    const validData = results.data.filter(row => {
+      return Object.values(row).some(value => value && value.toString().trim())
+    })
+
+    console.log('有效数据行数:', validData.length)
+
+    if (validData.length === 0) {
+      ElMessage.warning('文件中没有找到有效的数据')
+      return
+    }
+
+    const normalizedData = validData.map(normalizeRowData).filter(row => row.title)
+    console.log('标准化后的数据:', normalizedData)
+    parsedData.value = normalizedData
+
+    if (normalizedData.length > 0) {
+      ElMessage.success(`成功解析 ${normalizedData.length} 条数据`)
+    } else {
+      ElMessage.warning('没有找到包含标题的有效数据行')
+    }
+  }
+
+  // 先读取为 ArrayBuffer 做编码探测，解决 Excel 另存为 GBK 导致的解析失败
+  const reader = new FileReader()
+  reader.onload = (e) => {
+    try {
+      const text = decodeCSVBuffer(e.target.result)
+      Papa.parse(text, {
+        header: true,
+        complete: handleParseResult,
+        error: (error) => {
+          console.error('CSV解析错误:', error)
+          ElMessage.error('CSV文件解析失败: ' + error.message)
+        }
+      })
+    } catch (error) {
+      console.error('CSV解码错误:', error)
+      ElMessage.error('CSV文件解码失败: ' + error.message)
+    }
+  }
+  reader.onerror = () => {
+    ElMessage.error('读取CSV文件失败')
+  }
+  reader.readAsArrayBuffer(file)
 }
 
 // 解析Excel文件
