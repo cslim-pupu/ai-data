@@ -312,20 +312,40 @@ const parseCSV = (file) => {
 
   const handleParseResult = (results) => {
     console.log('CSV解析结果:', results)
-    if (results.errors.length > 0) {
-      console.error('CSV解析错误:', results.errors)
-      ElMessage.error('CSV文件解析失败: ' + results.errors[0].message)
+
+    // 字段数不匹配等非致命错误不中止导入，仅记录并跳过对应行
+    const fieldMismatchErrors = (results.errors || []).filter(
+      err => err.type === 'FieldMismatch'
+    )
+    const fatalErrors = (results.errors || []).filter(
+      err => err.type !== 'FieldMismatch'
+    )
+
+    if (fieldMismatchErrors.length > 0) {
+      console.warn('CSV 存在字段数不匹配的行，已跳过:', fieldMismatchErrors)
+    }
+    if (fatalErrors.length > 0) {
+      console.error('CSV解析致命错误:', fatalErrors)
+      ElMessage.error('CSV文件解析失败: ' + fatalErrors[0].message)
       return
     }
 
-    const validData = results.data.filter(row => {
+    // 期望字段数（表头列数），用于过滤字段数不一致的坏行
+    const expectedFields = results.meta && results.meta.fields ? results.meta.fields.length : 0
+
+    const validData = (results.data || []).filter(row => {
+      if (!row) return false
+      // Object.keys 数量应等于表头列数；少字段的行（如引号未闭合导致合并）跳过
+      if (expectedFields > 0 && Object.keys(row).length < expectedFields) return false
       return Object.values(row).some(value => value && value.toString().trim())
     })
 
     console.log('有效数据行数:', validData.length)
 
     if (validData.length === 0) {
-      ElMessage.warning('文件中没有找到有效的数据')
+      ElMessage.warning(fieldMismatchErrors.length > 0
+        ? '文件中所有数据行格式异常，未能解析出有效数据，请检查文件是否由 Excel 另存导致格式变化'
+        : '文件中没有找到有效的数据')
       return
     }
 
@@ -334,7 +354,8 @@ const parseCSV = (file) => {
     parsedData.value = normalizedData
 
     if (normalizedData.length > 0) {
-      ElMessage.success(`成功解析 ${normalizedData.length} 条数据`)
+      const skipMsg = fieldMismatchErrors.length > 0 ? `（已跳过 ${fieldMismatchErrors.length} 行格式异常数据）` : ''
+      ElMessage.success(`成功解析 ${normalizedData.length} 条数据${skipMsg}`)
     } else {
       ElMessage.warning('没有找到包含标题的有效数据行')
     }
@@ -347,6 +368,7 @@ const parseCSV = (file) => {
       const text = decodeCSVBuffer(e.target.result)
       Papa.parse(text, {
         header: true,
+        skipEmptyLines: true,
         complete: handleParseResult,
         error: (error) => {
           console.error('CSV解析错误:', error)
