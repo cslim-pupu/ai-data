@@ -402,8 +402,8 @@
           <el-date-picker
             v-model="editForm.publishDate"
             type="date"
-            format="MM-DD"
-            value-format="MM-DD"
+            format="YYYY-MM-DD"
+            value-format="YYYY-MM-DD"
             style="width: 100%"
           />
         </el-form-item>

@@ -134,11 +134,11 @@
             v-model="form.publishDate"
             type="date"
             placeholder="选择发布日期"
-            format="MM-DD"
-            value-format="MM-DD"
+            format="YYYY-MM-DD"
+            value-format="YYYY-MM-DD"
             style="width: 100%"
           />
-          <div class="form-tip">选发布时间（月份 + 日期）</div>
+          <div class="form-tip">选择发布时间（年 + 月 + 日）</div>
         </el-form-item>
 
         <!-- 节日标签 -->
